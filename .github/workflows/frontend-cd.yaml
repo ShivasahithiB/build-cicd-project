@@ -55,7 +55,11 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Test AWS credentials
+        run: aws sts get-caller-identity
 
       - name: Login to Amazon ECR
         id: login-ecr
@@ -86,18 +90,22 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ env.AWS_REGION }}
+
+      - name: Test AWS credentials
+        run: aws sts get-caller-identity
 
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig \
-            --region $AWS_REGION \
-            --name $EKS_CLUSTER
+            --region "$AWS_REGION" \
+            --name "$EKS_CLUSTER"
 
       - name: Get ECR repository URL
         run: |
           ECR_URL=$(aws ecr describe-repositories \
-            --repository-names $ECR_REPOSITORY \
+            --repository-names "$ECR_REPOSITORY" \
             --query 'repositories[0].repositoryUri' \
             --output text)
 
