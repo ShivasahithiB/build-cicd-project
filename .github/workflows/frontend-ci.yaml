@@ -1,6 +1,12 @@
 name: Frontend Continuous Integration
 
 on:
+  push:
+    branches:
+      - master
+    paths:
+      - "starter/frontend/**"
+
   pull_request:
     branches:
       - master
@@ -73,11 +79,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Build Docker image
         run: |
           docker build \
-            --build-arg REACT_APP_MOVIE_API_URL=${REACT_APP_MOVIE_API_URL} \
+            --build-arg REACT_APP_MOVIE_API_URL=${{ env.REACT_APP_MOVIE_API_URL }} \
             --tag mp-frontend:latest .
