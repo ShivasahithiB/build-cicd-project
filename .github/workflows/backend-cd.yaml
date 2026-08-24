@@ -7,7 +7,6 @@ on:
     paths:
       - "starter/backend/**"
       - ".github/workflows/backend-cd.yaml"
-
   workflow_dispatch:
 
 env:
@@ -86,27 +85,31 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
-
-      - name: Setup Kustomize
-        uses: imranismail/setup-kustomize@v2
-
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig \
             --region $AWS_REGION \
             --name $EKS_CLUSTER
 
-      - name: Update backend image
-        env:
-          IMAGE_TAG: ${{ github.sha }}
+      - name: Get ECR repository URL
+        id: ecr
         run: |
           ECR_URL=$(aws ecr describe-repositories \
             --repository-names $ECR_REPOSITORY \
             --query 'repositories[0].repositoryUri' \
             --output text)
 
-          cd starter/backend/k8s
-          kustomize edit set image backend=$ECR_URL:$IMAGE_TAG
-          kubectl apply -k .
+          echo "ECR_URL=$ECR_URL" >> "$GITHUB_ENV"
+
+      - name: Apply Kubernetes configuration
+        run: |
+          kubectl apply -k starter/backend/k8s
+
+      - name: Update backend image
+        run: |
+          kubectl set image deployment/backend \
+            backend=$ECR_URL:${{ github.sha }}
+
+      - name: Wait for deployment
+        run: |
+          kubectl rollout status deployment/backend --timeout=180s

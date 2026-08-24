@@ -16,7 +16,7 @@ env:
   EKS_CLUSTER: cluster
 
 jobs:
-  lint:
+  test:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18"
+          node-version-file: starter/frontend/.nvmrc
           cache: npm
           cache-dependency-path: starter/frontend/package-lock.json
 
@@ -38,30 +38,12 @@ jobs:
         working-directory: starter/frontend
         run: npm run lint
 
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-          cache: npm
-          cache-dependency-path: starter/frontend/package-lock.json
-
-      - name: Install dependencies
-        working-directory: starter/frontend
-        run: npm ci
-
       - name: Run tests
         working-directory: starter/frontend
         run: CI=true npm test -- --watchAll=false
 
   build:
-    needs: [lint, test]
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
@@ -105,27 +87,30 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
-
-      - name: Setup Kustomize
-        uses: imranismail/setup-kustomize@v2
-
       - name: Update kubeconfig
         run: |
           aws eks update-kubeconfig \
             --region $AWS_REGION \
             --name $EKS_CLUSTER
 
-      - name: Update frontend image
-        env:
-          IMAGE_TAG: ${{ github.sha }}
+      - name: Get ECR repository URL
         run: |
           ECR_URL=$(aws ecr describe-repositories \
             --repository-names $ECR_REPOSITORY \
             --query 'repositories[0].repositoryUri' \
             --output text)
 
-          cd starter/frontend/k8s
-          kustomize edit set image frontend=$ECR_URL:$IMAGE_TAG
-          kubectl apply -k .
+          echo "ECR_URL=$ECR_URL" >> "$GITHUB_ENV"
+
+      - name: Apply Kubernetes configuration
+        run: |
+          kubectl apply -k starter/frontend/k8s
+
+      - name: Update frontend image
+        run: |
+          kubectl set image deployment/frontend \
+            frontend=$ECR_URL:${{ github.sha }}
+
+      - name: Wait for deployment
+        run: |
+          kubectl rollout status deployment/frontend --timeout=180s

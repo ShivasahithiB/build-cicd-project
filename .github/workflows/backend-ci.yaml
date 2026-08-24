@@ -1,12 +1,6 @@
 name: Backend Continuous Integration
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - "starter/backend/**"
-
   pull_request:
     branches:
       - master
@@ -24,7 +18,7 @@ jobs:
         working-directory: starter/backend
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Python
@@ -49,7 +43,7 @@ jobs:
         working-directory: starter/backend
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Setup Python
@@ -75,7 +69,7 @@ jobs:
         working-directory: starter/backend
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Build Docker image
