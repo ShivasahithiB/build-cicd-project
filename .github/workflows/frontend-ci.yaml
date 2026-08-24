@@ -3,13 +3,13 @@ name: Frontend Continuous Integration
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - "starter/frontend/**"
 
   pull_request:
     branches:
-      - master
+      - main
     paths:
       - "starter/frontend/**"
 
@@ -78,6 +78,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: starter/frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: starter/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: CI=true npm test -- --watchAll=false
 
       - name: Build Docker image
         run: |
