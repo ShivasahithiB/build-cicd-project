@@ -3,12 +3,13 @@ name: Backend Continuous Integration
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - "starter/backend/**"
+
   pull_request:
     branches:
-      - master
+      - main
     paths:
       - "starter/backend/**"
 
